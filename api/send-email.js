@@ -34,6 +34,18 @@ export default async function handler(req, res) {
     }
 
     try {
+        // Garante que o corpo esteja em JSON. Serverless do Vercel não faz parsing de multipart automaticamente.
+        const contentType = req.headers['content-type'] || req.headers['Content-Type'] || '';
+        const isJson = contentType.includes('application/json');
+
+        if (!isJson && (typeof req.body !== 'object' || req.body === null)) {
+            console.log('❌ Formato de corpo não suportado:', contentType);
+            return res.status(400).json({
+                success: false,
+                message: 'Formato de requisição não suportado. Envie Content-Type: application/json.'
+            });
+        }
+
         const { 
             nome, 
             email, 
@@ -42,7 +54,7 @@ export default async function handler(req, res) {
             cnpj, 
             valorAporte, 
             descricao 
-        } = req.body;
+        } = req.body || {};
 
         console.log('📝 Dados recebidos:', { nome, email, telefone, empresa });
         
@@ -57,7 +69,7 @@ export default async function handler(req, res) {
 
         console.log('⚙️ Configurando transporter SMTP...');
         // Configurar transporter do nodemailer
-        const transporter = nodemailer.createTransporter({
+        const transporter = nodemailer.createTransport({
             host: process.env.SMTP_HOST || 'smtp.gmail.com',
             port: parseInt(process.env.SMTP_PORT) || 587,
             secure: process.env.SMTP_SECURE === 'true',
@@ -66,6 +78,14 @@ export default async function handler(req, res) {
                 pass: process.env.EMAIL_PASS
             }
         });
+
+        // Verifica conexão SMTP (não crítico)
+        try {
+            await transporter.verify();
+            console.log('✅ Conexão SMTP verificada');
+        } catch (verifyError) {
+            console.warn('⚠️ Falha na verificação SMTP (não crítico):', verifyError.message);
+        }
         
         console.log('✅ Transporter configurado com sucesso');
 

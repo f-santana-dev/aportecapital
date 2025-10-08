@@ -1302,21 +1302,46 @@ const ConsultoriaModal = {
             return this.processFormStatically(formData);
         }
 
-        // Remove o campo de arquivo do FormData para evitar duplicação
-        formData.delete('documentos');
-        
-        // Adiciona os arquivos ao FormData
-        this.uploadedFiles.forEach((file, index) => {
-            formData.append('documentos', file);
-        });
-
         // Determina a URL do backend
         const backendUrl = this.getBackendUrl();
-        
-        const response = await fetch(`${backendUrl}/api/consultoria`, {
-            method: 'POST',
-            body: formData
-        });
+        const isSameOrigin = backendUrl === window.location.origin;
+
+        // Remove o campo de arquivo do FormData para evitar duplicação
+        formData.delete('documentos');
+
+        let fetchOptions;
+        if (isSameOrigin) {
+            // Em produção (serverless, mesma origem), enviar como JSON
+            const payload = {};
+            for (const [key, value] of formData.entries()) {
+                // FormData pode ter múltiplos valores, aqui simplificamos para JSON
+                if (payload[key] !== undefined) {
+                    // Se já existe, transforma em array
+                    payload[key] = Array.isArray(payload[key]) ? payload[key] : [payload[key]];
+                    payload[key].push(value);
+                } else {
+                    payload[key] = value;
+                }
+            }
+
+            fetchOptions = {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            };
+        } else {
+            // Ambiente local Node: enviar multipart com arquivos
+            this.uploadedFiles.forEach((file) => {
+                formData.append('documentos', file);
+            });
+
+            fetchOptions = {
+                method: 'POST',
+                body: formData
+            };
+        }
+
+        const response = await fetch(`${backendUrl}/api/consultoria`, fetchOptions);
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
