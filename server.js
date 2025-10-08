@@ -1101,6 +1101,17 @@ function generateEmailHTML(data, dadosCNPJ = null, downloadLink = null, files = 
                         <div class="value">${data.mensagem ? data.mensagem.replace(/\n/g, '<br>') : 'Não informado'}</div>
                     </div>
                     
+                    ${data.bancos || data.outrosBancos ? `
+                    <div class="field" style="margin-top: 30px; margin-bottom: 30px; background: #f0f9ff; padding: 20px; border-radius: 8px; border-left: 6px solid #0ea5e9;">
+                        <div class="label" style="font-size: 22px; color: #0369a1; font-weight: bold; margin-bottom: 15px;">🏦 Bancos onde possui conta:</div>
+                        <div class="value" style="font-size: 18px; font-weight: 600; padding: 20px; background: white; border-radius: 5px; margin-top: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                            ${data.bancos ? (Array.isArray(data.bancos) ? data.bancos.split(',').map(banco => `<span style="color: #0369a1; display: inline-block; margin: 5px 10px 5px 0;">${banco.trim()}</span>`).join(' • ') : `<span style="color: #0369a1;">${data.bancos}</span>`) : ''}
+                            ${data.bancos && data.outrosBancos ? ' • ' : ''}
+                            ${data.outrosBancos ? `<span style="color: #0369a1; font-weight: bold; text-decoration: underline;">Outros: ${data.outrosBancos}</span>` : ''}
+                        </div>
+                    </div>
+                    ` : ''}
+                    
                     ${data.outrosDocumentos ? `
                     <div class="field">
                         <div class="label">Outros Documentos:</div>
