@@ -1305,15 +1305,17 @@ const ConsultoriaModal = {
         // Determina a URL do backend
         const backendUrl = this.getBackendUrl();
         const isLocalDev = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+        const hasBackend = this.hasBackendEndpoint();
 
         // Remove o campo de arquivo do FormData para evitar duplicação
         formData.delete('documentos');
 
-        let endpoint = '/api/consultoria';
+        let endpoint;
         let fetchOptions;
 
-        if (isLocalDev) {
-            // Ambiente local Node: enviar multipart com arquivos para /api/consultoria
+        if (isLocalDev || hasBackend) {
+            // Backend Express ativo: enviar multipart para /api/consultoria
+            endpoint = '/api/consultoria';
             this.uploadedFiles.forEach((file) => {
                 formData.append('documentos', file);
             });
@@ -1322,7 +1324,7 @@ const ConsultoriaModal = {
                 body: formData
             };
         } else {
-            // Produção (serverless): enviar JSON para /api/send-email
+            // Ambiente estático sem backend: enviar JSON para função serverless
             endpoint = '/api/send-email';
             const payload = {};
             for (const [key, value] of formData.entries()) {

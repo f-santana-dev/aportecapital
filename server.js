@@ -616,6 +616,7 @@ const corsOptions = {
             'http://localhost:3002',
             // Produção - domínios permitidos
             'https://aportecapital.onrender.com',
+            'https://aportecapital-khso.onrender.com',
             process.env.FRONTEND_URL,
             process.env.DOMAIN_URL
         ].filter(Boolean); // Remove valores undefined/null
