@@ -1304,44 +1304,43 @@ const ConsultoriaModal = {
 
         // Determina a URL do backend
         const backendUrl = this.getBackendUrl();
-        const isSameOrigin = backendUrl === window.location.origin;
+        const isLocalDev = ['localhost', '127.0.0.1'].includes(window.location.hostname);
 
         // Remove o campo de arquivo do FormData para evitar duplicação
         formData.delete('documentos');
 
+        let endpoint = '/api/consultoria';
         let fetchOptions;
-        if (isSameOrigin) {
-            // Em produção (serverless, mesma origem), enviar como JSON
+
+        if (isLocalDev) {
+            // Ambiente local Node: enviar multipart com arquivos para /api/consultoria
+            this.uploadedFiles.forEach((file) => {
+                formData.append('documentos', file);
+            });
+            fetchOptions = {
+                method: 'POST',
+                body: formData
+            };
+        } else {
+            // Produção (serverless): enviar JSON para /api/send-email
+            endpoint = '/api/send-email';
             const payload = {};
             for (const [key, value] of formData.entries()) {
-                // FormData pode ter múltiplos valores, aqui simplificamos para JSON
                 if (payload[key] !== undefined) {
-                    // Se já existe, transforma em array
                     payload[key] = Array.isArray(payload[key]) ? payload[key] : [payload[key]];
                     payload[key].push(value);
                 } else {
                     payload[key] = value;
                 }
             }
-
             fetchOptions = {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             };
-        } else {
-            // Ambiente local Node: enviar multipart com arquivos
-            this.uploadedFiles.forEach((file) => {
-                formData.append('documentos', file);
-            });
-
-            fetchOptions = {
-                method: 'POST',
-                body: formData
-            };
         }
 
-        const response = await fetch(`${backendUrl}/api/consultoria`, fetchOptions);
+        const response = await fetch(`${backendUrl}${endpoint}`, fetchOptions);
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
@@ -1535,7 +1534,8 @@ const ConsultoriaModal = {
     getBackendUrl() {
         // Se estiver rodando localmente com o servidor Node.js
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            return 'http://localhost:3001';
+            // Ajustado para a porta correta do backend local
+            return 'http://localhost:3002';
         }
         
         // Se estiver em produção no Vercel, usa as Serverless Functions
